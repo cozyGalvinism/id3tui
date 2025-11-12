@@ -2,6 +2,10 @@
 name = "id3tui"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+authors = ["cozyGalvinism"]
+description = "A terminal user interface for editing ID3v2 tags and audio metadata"
+repository = "https://github.com/cozygalvinism/id3tui"
 
 [dependencies]
 ratatui = "0.29"
