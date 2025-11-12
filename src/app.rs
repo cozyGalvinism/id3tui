@@ -70,7 +70,7 @@ impl App {
     pub fn enter_edit_mode(&mut self) {
         if self.focus == Focus::MetadataView && self.metadata.is_some() {
             self.input_mode = InputMode::Editing;
-            self.cursor_position = self.metadata.as_ref().unwrap().get_field_value(self.editing_field).len();
+            self.cursor_position = self.metadata.as_ref().unwrap().get_field_value(self.editing_field).chars().count();
         }
     }
 
@@ -133,7 +133,7 @@ impl App {
         if self.metadata.is_some() {
             if self.editing_field > 0 {
                 self.editing_field -= 1;
-                self.cursor_position = self.metadata.as_ref().unwrap().get_field_value(self.editing_field).len();
+                self.cursor_position = self.metadata.as_ref().unwrap().get_field_value(self.editing_field).chars().count();
             }
         }
     }
@@ -142,16 +142,18 @@ impl App {
         if let Some(metadata) = &self.metadata {
             if self.editing_field < metadata.field_count() - 1 {
                 self.editing_field += 1;
-                self.cursor_position = self.metadata.as_ref().unwrap().get_field_value(self.editing_field).len();
+                self.cursor_position = self.metadata.as_ref().unwrap().get_field_value(self.editing_field).chars().count();
             }
         }
     }
 
     pub fn insert_char(&mut self, c: char) {
         if let Some(metadata) = &mut self.metadata {
-            let mut value = metadata.get_field_value(self.editing_field);
-            value.insert(self.cursor_position, c);
-            metadata.set_field_value(self.editing_field, value);
+            let value = metadata.get_field_value(self.editing_field);
+            let mut chars: Vec<char> = value.chars().collect();
+            chars.insert(self.cursor_position, c);
+            let new_value: String = chars.into_iter().collect();
+            metadata.set_field_value(self.editing_field, new_value);
             self.cursor_position += 1;
         }
     }
@@ -159,9 +161,11 @@ impl App {
     pub fn delete_char(&mut self) {
         if let Some(metadata) = &mut self.metadata {
             if self.cursor_position > 0 {
-                let mut value = metadata.get_field_value(self.editing_field);
-                value.remove(self.cursor_position - 1);
-                metadata.set_field_value(self.editing_field, value);
+                let value = metadata.get_field_value(self.editing_field);
+                let mut chars: Vec<char> = value.chars().collect();
+                chars.remove(self.cursor_position - 1);
+                let new_value: String = chars.into_iter().collect();
+                metadata.set_field_value(self.editing_field, new_value);
                 self.cursor_position -= 1;
             }
         }
@@ -176,7 +180,8 @@ impl App {
     pub fn move_cursor_right(&mut self) {
         if let Some(metadata) = &self.metadata {
             let value = metadata.get_field_value(self.editing_field);
-            if self.cursor_position < value.len() {
+            let char_count = value.chars().count();
+            if self.cursor_position < char_count {
                 self.cursor_position += 1;
             }
         }

@@ -97,9 +97,10 @@ fn draw_metadata_view(f: &mut Frame, app: &mut App, area: Rect) {
                     ];
 
                     // Show cursor in editing mode
-                    if app.cursor_position <= value.len() {
-                        let before = value[..app.cursor_position].to_string();
-                        let after = value[app.cursor_position..].to_string();
+                    let char_count = value.chars().count();
+                    if app.cursor_position <= char_count {
+                        let before: String = value.chars().take(app.cursor_position).collect();
+                        let after: String = value.chars().skip(app.cursor_position).collect();
                         spans.push(Span::raw(before));
                         spans.push(Span::styled(
                             "█",
