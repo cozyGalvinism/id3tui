@@ -59,19 +59,6 @@ pub enum AudioFormat {
 }
 
 impl AudioMetadata {
-    pub fn new(format: AudioFormat) -> Self {
-        Self {
-            title: String::new(),
-            artist: String::new(),
-            album: String::new(),
-            year: String::new(),
-            track: String::new(),
-            genre: String::new(),
-            comment: String::new(),
-            format,
-        }
-    }
-
     pub fn read_from_file(path: &Path) -> Result<Self> {
         let ext = path
             .extension()

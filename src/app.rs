@@ -79,6 +79,7 @@ impl App {
 
     pub fn exit_edit_mode(&mut self) {
         self.input_mode = InputMode::Normal;
+        self.focus = Focus::FileBrowser;
     }
 
     pub fn previous_item(&mut self) {
@@ -196,6 +197,7 @@ impl App {
         if let (Some(metadata), Some(path)) = (&self.metadata, &self.current_file) {
             metadata.write_to_file(path)?;
             self.input_mode = InputMode::Normal;
+            self.focus = Focus::FileBrowser;
         }
         Ok(())
     }
