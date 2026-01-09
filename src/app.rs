@@ -25,6 +25,7 @@ pub struct App {
     pub show_help: bool,
     pub editing_field: usize,
     pub cursor_position: usize,
+    pub scroll_offset: usize,
 }
 
 impl App {
@@ -51,6 +52,7 @@ impl App {
             show_help: false,
             editing_field: 0,
             cursor_position: 0,
+            scroll_offset: 0,
         })
     }
 
@@ -71,6 +73,7 @@ impl App {
         if self.focus == Focus::MetadataView && self.metadata.is_some() {
             self.input_mode = InputMode::Editing;
             self.cursor_position = self.metadata.as_ref().unwrap().get_field_value(self.editing_field).chars().count();
+            self.scroll_offset = 0;
         }
     }
 
@@ -134,6 +137,7 @@ impl App {
             if self.editing_field > 0 {
                 self.editing_field -= 1;
                 self.cursor_position = self.metadata.as_ref().unwrap().get_field_value(self.editing_field).chars().count();
+                self.scroll_offset = 0;
             }
         }
     }
@@ -143,6 +147,7 @@ impl App {
             if self.editing_field < metadata.field_count() - 1 {
                 self.editing_field += 1;
                 self.cursor_position = self.metadata.as_ref().unwrap().get_field_value(self.editing_field).chars().count();
+                self.scroll_offset = 0;
             }
         }
     }
@@ -193,5 +198,27 @@ impl App {
             self.input_mode = InputMode::Normal;
         }
         Ok(())
+    }
+
+    pub fn update_scroll(&mut self, viewport_width: usize) {
+        // Account for the label width and formatting (e.g., "Title       : ")
+        let label_width = 14; // "Title       : " is 14 chars
+        let usable_width = if viewport_width > label_width {
+            viewport_width.saturating_sub(label_width)
+        } else {
+            1
+        };
+
+        // Ensure cursor is visible within the viewport
+        // The cursor character "█" is rendered at the cursor position
+        if self.cursor_position < self.scroll_offset {
+            // Cursor moved before the visible area, scroll left
+            self.scroll_offset = self.cursor_position;
+        } else if self.cursor_position >= self.scroll_offset + usable_width {
+            // Cursor moved beyond the visible area, scroll right
+            // We need to ensure cursor_position - scroll_offset < usable_width
+            // So: scroll_offset = cursor_position - (usable_width - 1)
+            self.scroll_offset = self.cursor_position.saturating_sub(usable_width - 1);
+        }
     }
 }

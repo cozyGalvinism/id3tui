@@ -24,18 +24,41 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     draw_metadata_view(f, app, chunks[1]);
 }
 
-fn draw_file_browser(f: &mut Frame, app: &App, area: Rect) {
+fn draw_file_browser(f: &mut Frame, app: &mut App, area: Rect) {
     let border_style = if app.focus == Focus::FileBrowser && app.input_mode == InputMode::Normal {
         Style::default().fg(Color::Cyan)
     } else {
         Style::default()
     };
 
+    // Calculate scroll offset to keep selected item visible (edge scrolling)
+    // Account for borders (2 lines: top and bottom)
+    let visible_height = area.height.saturating_sub(2) as usize;
+    let selected = app.file_browser.selected;
+    let total_items = app.file_browser.entries.len();
+
+    // Edge scrolling: cursor reaches top/bottom before scrolling
+    if total_items <= visible_height {
+        // All items fit, no scrolling needed
+        app.file_browser.scroll_offset = 0;
+    } else if selected < app.file_browser.scroll_offset {
+        // Cursor moved above visible area, scroll up
+        app.file_browser.scroll_offset = selected;
+    } else if selected >= app.file_browser.scroll_offset + visible_height {
+        // Cursor moved below visible area, scroll down
+        app.file_browser.scroll_offset = selected.saturating_sub(visible_height - 1);
+    }
+    // Otherwise, keep scroll_offset unchanged (edge scrolling behavior)
+
+    let scroll_offset = app.file_browser.scroll_offset;
+
     let items: Vec<ListItem> = app
         .file_browser
         .entries
         .iter()
         .enumerate()
+        .skip(scroll_offset)
+        .take(visible_height)
         .map(|(i, entry)| {
             let icon = if entry.is_dir { "📁" } else { "🎵" };
             let content = format!("{} {}", icon, entry.name);
@@ -76,6 +99,13 @@ fn draw_metadata_view(f: &mut Frame, app: &mut App, area: Rect) {
         Style::default()
     };
 
+    // Update scroll offset if in editing mode
+    if app.input_mode == InputMode::Editing {
+        // Account for borders (2 chars: left and right)
+        let text_area_width = area.width.saturating_sub(2) as usize;
+        app.update_scroll(text_area_width);
+    }
+
     if let Some(metadata) = &app.metadata {
         let fields = TagField::all();
 
@@ -96,11 +126,15 @@ fn draw_metadata_view(f: &mut Frame, app: &mut App, area: Rect) {
                         ),
                     ];
 
-                    // Show cursor in editing mode
+                    // Show cursor in editing mode with scrolling
                     let char_count = value.chars().count();
                     if app.cursor_position <= char_count {
-                        let before: String = value.chars().take(app.cursor_position).collect();
-                        let after: String = value.chars().skip(app.cursor_position).collect();
+                        // Apply scroll offset to show only the visible portion
+                        let visible_value: String = value.chars().skip(app.scroll_offset).collect();
+                        let cursor_pos_in_view = app.cursor_position.saturating_sub(app.scroll_offset);
+
+                        let before: String = visible_value.chars().take(cursor_pos_in_view).collect();
+                        let after: String = visible_value.chars().skip(cursor_pos_in_view).collect();
                         spans.push(Span::raw(before));
                         spans.push(Span::styled(
                             "█",
@@ -108,7 +142,8 @@ fn draw_metadata_view(f: &mut Frame, app: &mut App, area: Rect) {
                         ));
                         spans.push(Span::raw(after));
                     } else {
-                        spans.push(Span::raw(value.clone()));
+                        let visible_value: String = value.chars().skip(app.scroll_offset).collect();
+                        spans.push(Span::raw(visible_value));
                     }
 
                     Line::from(spans)

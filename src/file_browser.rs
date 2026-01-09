@@ -13,6 +13,7 @@ pub struct FileBrowser {
     pub current_dir: PathBuf,
     pub entries: Vec<FileEntry>,
     pub selected: usize,
+    pub scroll_offset: usize,
 }
 
 impl FileBrowser {
@@ -21,6 +22,7 @@ impl FileBrowser {
             current_dir: path,
             entries: Vec::new(),
             selected: 0,
+            scroll_offset: 0,
         };
         browser.refresh()?;
         Ok(browser)
@@ -96,6 +98,7 @@ impl FileBrowser {
     pub fn enter_directory(&mut self, path: PathBuf) -> Result<()> {
         self.current_dir = path;
         self.selected = 0;
+        self.scroll_offset = 0;
         self.refresh()?;
         Ok(())
     }
@@ -104,6 +107,7 @@ impl FileBrowser {
         if let Some(parent) = self.current_dir.parent() {
             self.current_dir = parent.to_path_buf();
             self.selected = 0;
+            self.scroll_offset = 0;
             self.refresh()?;
         }
         Ok(())
